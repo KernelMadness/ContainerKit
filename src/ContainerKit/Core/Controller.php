@@ -223,7 +223,7 @@ class Controller {
   }
 
   public function restart($selector, $console_callback = null) {
-    $this->stop($selector, $console_callback);
+    $this->stop($selector, false, $console_callback);
     $this->start($selector, $console_callback);
   }
 
@@ -241,6 +241,9 @@ class Controller {
 
     $root = $this->getRoot('storage');
     $croot = $root . '/' . $params['name'];
+
+    if (!is_dir("$root/.templates/{$params['template']}"))
+      throw new \Exception('Template does not exists');
 
     $console_callback("Creating root filesystem");
     $this->launchExecutable('cp', "-a $root/.templates/{$params['template']} $root/{$params['name']}");

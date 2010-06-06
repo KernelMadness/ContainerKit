@@ -178,7 +178,11 @@ class Container {
   public function getInitPid() {
     if (!isset($this->cache['tasks']))
       $this->cache['tasks'] = file($this->getCgroupEntryPath('tasks'), \FILE_IGNORE_NEW_LINES);
-    return intval($this->cache['tasks'][0]);
+    foreach ($this->cache['tasks'] as $pid) {
+      $v = file_get_contents('/proc/' . $pid . '/cmdline');
+      if (substr($v, 0, 4) == 'init')
+        return $pid;
+    }
   }
 
   /**

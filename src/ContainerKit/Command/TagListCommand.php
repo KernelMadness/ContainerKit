@@ -40,7 +40,7 @@ class TagListCommand extends Command {
     else
       $containers = $this->application->getController()->selectContainers($selector);
     $l = Formatter::calculateNamelength($containers) + 1;
-    $FORMAT = "%{$l}s %5s\n";
+    $FORMAT = "%{$l}s %s\n";
     printf($FORMAT, 'Name', 'Tags');
     array_walk($containers, function(&$container, $key) use ($FORMAT) {
         vprintf($FORMAT, array($container->getName(), implode(', ', $container->getTags())));
