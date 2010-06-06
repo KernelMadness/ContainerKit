@@ -129,6 +129,8 @@ class Controller {
     if ($selector[0] == ':') { //Selector is tag
       $tag = substr($selector, 1);
       $containers = $this->getContainers();
+      if ($selector == ':all')
+        return $containers;
       foreach ($containers as $container) {
         if (in_array($tag, $container->getTags()))
           $ret[] = $container;

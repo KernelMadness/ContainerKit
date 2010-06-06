@@ -24,6 +24,9 @@ class StatCommand extends Command
   protected function configure()
   {
     $this
+      ->setDefinition(array(
+      new InputArgument('selector', InputArgument::OPTIONAL, 'Containers selector'),
+      ))
       ->setName('stat')
       ->setDescription('Show stats')
     ;
@@ -34,7 +37,10 @@ class StatCommand extends Command
    */
   protected function execute(InputInterface $input, OutputInterface $output)
   {
-    $containers = $this->application->getController()->getContainers();
+    if ($selector = $input->getArgument('selector'))
+      $containers = $this->application->getController()->selectContainers($selector);
+    else
+      $containers = $this->application->getController()->getContainers();
     $namelength = Formatter::calculateNamelength($containers) + 1;
     $FORMAT="%2s %{$namelength}s %6s %8s %12s %12s %12s %18s %10s %10s\n";
     printf($FORMAT, ' ', 'Name', 'Tasks', 'Rss', 'User time', 'System time',
