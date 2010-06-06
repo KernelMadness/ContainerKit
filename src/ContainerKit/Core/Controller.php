@@ -13,8 +13,16 @@ class Controller {
 
   private $cache = array();
 
+  /**
+   * Load configuration from file or array
+   *
+   * @param string|array $config
+   */
   public function loadConfig($filename) {
-    $this->config = \Symfony\Components\Yaml\Yaml::load($filename);
+    if (is_array($filename))
+      $this->config = $filename;
+    else
+      $this->config = \Symfony\Components\Yaml\Yaml::load($filename);
   }
 
   /**
@@ -134,6 +142,13 @@ class Controller {
     return $ret;
   }
 
+  /**
+   * Stop containers
+   *
+   * @param string $selector Containers selector
+   * @param boolean $hard Just stop container without waiting for processes to finish
+   * @param \Closure $console_callback Callback for console output
+   */
   public function stop($selector, $hard = false, $console_callback = null) {
     if ($console_callback == null)
       $console_callback = function() {};
@@ -144,6 +159,7 @@ class Controller {
     }
     if ($hard) {
       foreach ($containers as $container) {
+        $console_callback("Performing hard stop for '{$container->getName()}'");
         $container->stop(true);
       }
       return;
@@ -181,6 +197,12 @@ class Controller {
     }
   }
 
+  /**
+   * Start containers
+   * 
+   * @param string $selector Containers selector
+   * @param \Closure $console_callback Callback for console output
+   */
   public function start($selector, $console_callback = null) {
     if ($console_callback == null)
       $console_callback = function() {};
@@ -222,11 +244,23 @@ class Controller {
     }
   }
 
+  /**
+   * Restart containers
+   *
+   * @param string $selector Containers selector
+   * @param \Closure $console_callback Callback for console output
+   */
   public function restart($selector, $console_callback = null) {
     $this->stop($selector, false, $console_callback);
     $this->start($selector, $console_callback);
   }
 
+  /**
+   * Create container
+   *
+   * @param array[string] $params Creation parameters
+   * @param \Closure $console_callback Callback for console output
+   */
   public function create($params, $console_callback = null) {
     if ($console_callback == null)
       $console_callback = function() {};
@@ -270,6 +304,17 @@ class Controller {
     }
   }
 
+  public function destroy($selector, $console_callback = null) {
+    $this->stop($selector, true, $console_callback);
+    $containers = $this->selectContainers($selector);
+    foreach ($containers as $container) {
+      $console_callback("Purging '{$container->getName()}' filesystem");
+      $this->launchExecutable('rm', '-rf ' . $this->getRoot('storage') . "/{$container->getName()}");
+      $console_callback("Purging '{$container->getName()}' configuration");
+      $this->launchExecutable('rm', '-rf ' . $this->getRoot('config') . "/{$container->getName()}");
+    }
+  }
+
   /**
    * Find first unused IP in range
    *
@@ -309,6 +354,13 @@ class Controller {
     return $templates;
   }
 
+  /**
+   * Get config parameter
+   *
+   * @param string $section Config section
+   * @param string $key Section key
+   * @return string
+   */
   public function getConfig($section, $key) {
     return $this->config[$section][$key];
   }

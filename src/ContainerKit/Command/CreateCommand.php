@@ -79,7 +79,8 @@ class CreateCommand extends Command {
               $what .= " $key) $value\n";
             }
             $what .= 'Template';
-            $i = (int)$ask($what, $templates_rev[$default], $templates_rev);
+            $default_idx = isset($templates_rev[$default]) ? $templates_rev[$default] : null;
+            $i = (int)$ask($what, $default_idx, $templates_rev);
             $options[$key] = $templates[$i];
             break;
           case 'name':
