@@ -184,6 +184,8 @@ class Controller {
           $console_callback($name . ' stopped');
           if ($properties['object']->vethCleanup())
             $console_callback('Veth device cleanup performed for ' . $properties['object']->getName());
+          if ($this->getConfig('network', 'filtering') == 'on')
+            $container->disableEbtables();
           continue;
         }
         if (($properties['timestamp'] + $this->config['general']['stop_timeout']) < time()) {
@@ -192,6 +194,8 @@ class Controller {
           $console_callback("Timeout reached while stopping $name. Hard stop used.");
           if ($properties['object']->vethCleanup())
             $console_callback('Veth device cleanup performed for ' . $properties['object']->getName());
+          if ($this->getConfig('network', 'filtering') == 'on')
+            $container->disableEbtables();
         }
       }
       if (!empty($threads))
@@ -222,6 +226,8 @@ class Controller {
           'timestamp' => time(),
           'object' => $container,
           );
+        if ($this->getConfig('network', 'filtering') == 'on')
+          $container->enableEbtables();
         $container->start();
         $console_callback("Starting {$container->getName()}");
       }
@@ -297,13 +303,29 @@ class Controller {
       str_replace('%name%', $params['name'], $this->config['network']['hostname'])."\n");
     $console_callback("Writing host-side configuration");
     mkdir($this->getRoot('config') . "/{$params['name']}");
+
+    $mac_dec = array(0,0,0,0,0,0);
+    $mac_hex = array();
+    foreach ($mac_dec as &$value)
+      $value = rand(0,255);
+    $a = sprintf("%8b",$mac_dec[0]);
+    $a[6] = 1; //locally administered
+    $a[7] = 0; //unicast
+    $mac_dec[0] = bindec($a);
+    foreach ($mac_dec as $value)
+      $mac_hex[] = dechex($value);
+    $mac = implode(':', $mac_hex);
+
+    $search = array('%name%', '%mac%');
+    $replace = array($params['name'], $mac);
     file_put_contents(
       $this->getRoot('config') . "/{$params['name']}/config",
-      str_replace('%name%', $params['name'], file_get_contents(\CONFIG_DIR . '/container.config.template')));
+      str_replace($search, $replace, file_get_contents(\CONFIG_DIR . '/container.config.template')));
+    $container = $this->getContainer($params['name']);
     if (isset ($params['tag'])) {
-      $container = $this->getContainer($params['name']);
-      $container->setTag($params['tag']);
+      $container->addTag($params['tag']);
     }
+    $container->addAllowedIp($params['ip']);
   }
 
   public function destroy($selector, $console_callback = null) {

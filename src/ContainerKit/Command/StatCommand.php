@@ -66,17 +66,16 @@ class StatCommand extends Command
         $r['state'] = \Console_Color::convert(' %b--%n');
 
       if ($state == 'RUNNING') {
-        $memstat = $container->getMemstat();
-        $r['tasks'] = $memstat['tasks'];
-        $r['rss'] = Formatter::formatBytes($memstat['rss']);
-        $times = $container->getTimes();
-        $r['uptime'] = Formatter::formatTime($times['uptime']);
+        $r['tasks'] = count($container->getTasks());
+        $r['rss'] = Formatter::formatBytes($container->getRss());
+        $r['uptime'] = Formatter::formatTime($container->getUptime());
+        $times = $container->getCpuTimes();
         $r['systemtime'] = Formatter::formatTime($times['system']);
         $r['usertime'] = Formatter::formatTime($times['user']);
-        $netstat = $container->getNetstat();
-        if (isset($netstat['ip'])) $r['ip'] = $netstat['ip'];
-        if (isset($netstat['upload'])) $r['upload'] = Formatter::formatBytes($netstat['upload']);
-        if (isset($netstat['download'])) $r['download'] = Formatter::formatBytes($netstat['download']);
+        $r['ip'] = $container->getIp();
+        $traffic = $container->getTraffic();
+        $r['upload'] = Formatter::formatBytes($traffic['upload']);
+        $r['download'] = Formatter::formatBytes($traffic['download']);
       }
       vprintf($FORMAT, $r);
     }

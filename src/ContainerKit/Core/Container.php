@@ -23,22 +23,43 @@ class Container {
    */
   private $controller;
 
+  /**
+   *
+   * @param string $name
+   * @param Controller $controller
+   */
   private function  __construct($name, Controller $controller) {
     $this->name = $name;
     $this->controller = $controller;
   }
 
-
+  /**
+   * Load existing container
+   *
+   * @param string $name Container name
+   * @param Controller $controller
+   * @return Container
+   */
   static public function load($name, Controller $controller) {
     if (!is_dir($controller->getRoot('storage') . '/' . $name))
       return false;
     return new Container($name, $controller);
   }
 
+  /**
+   * Get container name
+   *
+   * @return string
+   */
   public function getName() {
     return $this->name;
   }
 
+  /**
+   * Get container name, e.g RUNNING, STOPPED, etc
+   *
+   * @return string state
+   */
   public function getState() {
     preg_match(
       "/'(.*)' is (.*)/",
@@ -49,12 +70,13 @@ class Container {
     return $matches[2];
   }
 
-  public function getTimes() {
-    preg_match("/(.*?)\..*/", file_get_contents('/proc/uptime'), $matches);
-    $uptime = $matches[1];
-    $initpid = $this->getInitPid();
-    $v = explode(' ', file_get_contents("/proc/$initpid/stat"));
-    $times = array('uptime' => $uptime - floor($v[21] / 100));
+  /**
+   * Get system and user time consumed by container
+   *
+   * @return array[string]
+   */
+  public function getCpuTimes() {
+    $times = array();
     $stat = file($this->getCgroupEntryPath('cpuacct.stat'), \FILE_IGNORE_NEW_LINES);
     $user = explode(' ', $stat[0]);
     $system = explode(' ', $stat[1]);
@@ -63,25 +85,104 @@ class Container {
     return $times;
   }
 
-  public function getMemstat() {
-    preg_match("/total_rss (.*)/", $this->getCgroupEntryContent('memory.stat'), $matches);
-    $memstat = array('rss' => $matches[1]);
-    $memstat['tasks'] = count(isset($this->cache['tasks']) ? $this->cache['tasks'] : ($this->cache['tasks'] = file($this->getCgroupEntryPath('tasks'), \FILE_IGNORE_NEW_LINES)));
-    return $memstat;
+  /**
+   * Get container uptime
+   *
+   * @return string uptime in seconds
+   */
+  public function getUptime() {
+    preg_match("/(.*?)\..*/", file_get_contents('/proc/uptime'), $matches);
+    $uptime = $matches[1];
+    $initpid = $this->getInitPid();
+    $v = explode(' ', file_get_contents("/proc/$initpid/stat"));
+    return ($uptime - floor($v[21] / 100));
   }
 
+  /**
+   * Get rss memory size
+   *
+   * @return string Resident memory size
+   */
+  public function getRss() {
+    preg_match("/total_rss (.*)/", $this->getCgroupEntryContent('memory.stat'), $matches);
+    return $matches[1];
+  }
+
+  /**
+   * Get array of container task PIDs
+   *
+   * @return array[string] Task PIDs
+   */
+  public function getTasks() {
+    if (!isset($this->cache['tasks']))
+      $this->cache['tasks'] = file($this->getCgroupEntryPath('tasks'), \FILE_IGNORE_NEW_LINES);
+    return $this->cache['tasks'];
+  }
+
+  /**
+   * Get primary IP addr
+   *
+   * @return string IP addr
+   */
   public function getIp() {
-    if (file_exists($v = $this->controller->getRoot('storage') . "/$this->name/etc/network/interfaces")) {
-      preg_match("/^address\s*(.*)$/mi", file_get_contents($v), $matches);
-      if(isset($matches[1]))
-        return $matches[1];
+    $ips = $this->getAllowedIps();
+    if (isset ($ips[0]))
+      return $ips[0];
+    return false;
+  }
+
+  /**
+   * Get allowed ip addrs
+   *
+   * @return array[string] array of ip addrs
+   */
+  public function getAllowedIps() {
+    if (file_exists($v = $this->getIpPath()))
+      return file($v, \FILE_IGNORE_NEW_LINES);
+    return array();
+  }
+
+  /**
+   * Add IP addr to allowed list
+   *
+   * @param string $ip
+   * @return boolean
+   */
+  public function addAllowedIp($ip) {
+    $ips = $this->getAllowedIps();
+    if (!in_array($ip, $ips)) {
+      $ips[] = $ip;
+      file_put_contents($this->getIpPath(), implode("\n", $ips));
+      $this->reloadEbtables();
+      return true;
     }
     return false;
   }
 
-  public function getNetstat() {
-    $ret = array();
-    $ret['ip'] = $this->getIp();
+  /**
+   * Remove IP addr from allowed list
+   *
+   * @param string $ip
+   */
+  public function removeAllowedIp($ip) {
+    $ips = $this->getAllowedIps();
+    if (false !== ($k = array_search($ip, $ips))) {
+      unset($ips[$k]);
+      file_put_contents($this->getIpPath(), implode("\n", $ips));
+      $this->reloadEbtables();
+    }
+  }
+
+  /**
+   * Get traffic stat
+   *
+   * @return array
+   */
+  public function getTraffic() {
+    $ret = array(
+      'upload' => 0,
+      'download' => 0,
+      );
 
     if ($dev = $this->getVeth()) {
       $ret['upload'] = trim(file_get_contents("/sys/class/net/$dev/statistics/rx_bytes"));
@@ -91,6 +192,11 @@ class Container {
     return $ret;
   }
 
+  /**
+   * Get veth device name
+   *
+   * @return string
+   */
   public function getVeth() {
     $config = file_get_contents($this->controller->getRoot('config') . "/$this->name/config");
     preg_match('/lxc\.network\.veth\.pair.*?=.*?(.*)/', $config, $matches);
@@ -128,7 +234,7 @@ class Container {
    * 
    * @return string
    */
-  private function getTagsFile() {
+  private function getTagsPath() {
     return $this->controller->getRoot('config') . '/' . $this->name . '/tags';
   }
 
@@ -138,23 +244,25 @@ class Container {
    * @return array[string]
    */
   public function getTags() {
-    if (file_exists($f = $this->getTagsFile()))
+    if (file_exists($f = $this->getTagsPath()))
       return file($f, \FILE_IGNORE_NEW_LINES);
     else
       return array();
   }
 
   /**
-   * Set tag to this container
+   * Add tag to this container
    *
    * @param string $tag
    */
-  public function setTag($tag) {
+  public function addTag($tag) {
     $tags = $this->getTags();
     if (!in_array($tag, $tags)) {
       $tags[] = $tag;
-      file_put_contents($this->getTagsFile(), implode("\n", $tags));
+      file_put_contents($this->getTagsPath(), implode("\n", $tags));
+      return true;
     }
+    return false;
   }
 
   /**
@@ -166,7 +274,7 @@ class Container {
     $tags = $this->getTags();
     if (false !== ($k = array_search($tag, $tags))) {
       unset($tags[$k]);
-      file_put_contents($this->getTagsFile(), implode("\n", $tags));
+      file_put_contents($this->getTagsPath(), implode("\n", $tags));
     }
   }
 
@@ -249,6 +357,60 @@ class Container {
    */
   public function getLogPath() {
     return $this->controller->getRoot('config') . '/' . $this->getName() . '/lxc.log';
+  }
+
+  public function getIpPath() {
+    return $this->controller->getRoot('config') . '/' . $this->getName() .  '/ip';
+  }
+
+  /**
+   * Get path to config file
+   * 
+   * @return string Path to config file
+   */
+  public function getConfigPath() {
+    return $this->controller->getRoot('config') . '/' . $this->name . '/config';
+  }
+
+  public function enableEbtables() {
+    $ips = $this->getAllowedIps();
+    $veth = $this->getVeth();
+    if (!$ips || !$veth)
+      return false;
+    $chain = 'ck_' . $veth;
+    $c = $this->controller;
+    $ebtables = function($argline) use ($c) {
+      $c->launchExecutable('ebtables', $argline);
+    };
+    $ebtables('-N ' . $chain);
+    $ebtables("-A INPUT -i $veth -j $chain");
+    $ebtables("-A $chain -j DROP");
+    foreach ($ips as $ip) {
+      $ebtables("-I $chain -p IPv4 --ip-src $ip -j RETURN");
+      $ebtables("-I $chain -p arp --arp-ip-src $ip -j RETURN");
+    }
+    return true;
+  }
+
+  public function disableEbtables() {
+    $ips = $this->getAllowedIps();
+    $veth = $this->getVeth();
+    if (!$ips || !$veth)
+      return false;
+    $chain = 'ck_' . $veth;
+    $c = $this->controller;
+    $ebtables = function($argline) use ($c) {
+      $c->launchExecutable('ebtables', $argline);
+    };
+    $ebtables("-D INPUT -i $veth -j $chain");
+    $ebtables('-X ' . $chain);
+  }
+
+  public function reloadEbtables() {
+    if (($this->getState() !== 'STOPPED') && ($this->controller->getConfig('network', 'filtering') == 'on')) {
+      $this->disableEbtables();
+      $this->enableEbtables();
+    }
   }
 
 }

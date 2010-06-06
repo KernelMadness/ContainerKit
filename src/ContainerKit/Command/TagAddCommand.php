@@ -11,12 +11,12 @@ use Symfony\Components\Console\Command\Command;
 use ContainerKit\Console\Formatter;
 
 /**
- * Remove tag from containers
+ * Add tag to containers
  *
  * @package    ContainerKit
  * @author     Denis.Rizaev <denis.rizaev@trueoffice.ru>
  */
-class TagRemoveCommand extends Command {
+class TagAddCommand extends Command {
   /**
    * @see Command
    */
@@ -24,10 +24,10 @@ class TagRemoveCommand extends Command {
     $this
       ->setDefinition(array(
       new InputArgument('selector', InputArgument::REQUIRED, 'Container selector'),
-      new InputArgument('tag', InputArgument::REQUIRED, 'Tag to set'),
+      new InputArgument('tag', InputArgument::REQUIRED, 'Tag to add'),
       ))
-      ->setName('tag-remove')
-      ->setDescription('Remove tag from containers')
+      ->setName('tag-add')
+      ->setDescription('Add tag to containers')
     ;
   }
 
@@ -40,7 +40,7 @@ class TagRemoveCommand extends Command {
 
     $containers = $this->application->getController()->selectContainers($selector);
     array_walk($containers, function(&$container, $key, $tag) {
-        $container->removeTag($tag);
+        $container->addTag($tag);
       }, $tag);
 
   }

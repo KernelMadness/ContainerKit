@@ -11,23 +11,23 @@ use Symfony\Components\Console\Command\Command;
 use ContainerKit\Console\Formatter;
 
 /**
- * Remove tag from containers
+ * Allow container to use specified ip
  *
  * @package    ContainerKit
  * @author     Denis.Rizaev <denis.rizaev@trueoffice.ru>
  */
-class TagRemoveCommand extends Command {
+class IpAddCommand extends Command {
   /**
    * @see Command
    */
   protected function configure() {
     $this
       ->setDefinition(array(
-      new InputArgument('selector', InputArgument::REQUIRED, 'Container selector'),
-      new InputArgument('tag', InputArgument::REQUIRED, 'Tag to set'),
+      new InputArgument('name', InputArgument::REQUIRED, 'Container name'),
+      new InputArgument('ip', InputArgument::REQUIRED, 'Ip to add'),
       ))
-      ->setName('tag-remove')
-      ->setDescription('Remove tag from containers')
+      ->setName('ip-add')
+      ->setDescription('Allow container to use specified ip')
     ;
   }
 
@@ -35,13 +35,12 @@ class TagRemoveCommand extends Command {
    * @see Command
    */
   protected function execute(InputInterface $input, OutputInterface $output) {
-    $selector = $input->getArgument('selector');
-    $tag = $input->getArgument('tag');
+    $name = $input->getArgument('name');
+    $ip = $input->getArgument('ip');
 
-    $containers = $this->application->getController()->selectContainers($selector);
-    array_walk($containers, function(&$container, $key, $tag) {
-        $container->removeTag($tag);
-      }, $tag);
-
+    $container = $this->application->getController()->getContainer($name);
+    if (!$container)
+      throw new \Exception('Container does not exists!');
+    $container->addAllowedIp($ip);
   }
 }

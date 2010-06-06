@@ -3,7 +3,7 @@
 
 const CONFIG_DIR = "/etc/containerkit";
 const SRC_DIR = "/usr/share/containerkit";
-const CONTAINERKIT_VERSION = '1.0-alpha2';
+const CONTAINERKIT_VERSION = '1.0-alpha2.10';
 
 require SRC_DIR.'/vendor/Symfony/Foundation/UniversalClassLoader.php';
 

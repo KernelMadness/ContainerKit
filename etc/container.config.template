@@ -8,6 +8,7 @@ lxc.network.link = br0
 lxc.network.name = eth0
 lxc.network.mtu = 1500
 lxc.network.veth.pair = veth_%name%
+lxc.network.hwaddr = %mac%
 lxc.rootfs = /var/containers/%name%
 lxc.cgroup.devices.deny = a
 # /dev/null and zero
