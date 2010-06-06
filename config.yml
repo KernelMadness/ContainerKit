@@ -1,0 +1,22 @@
+roots:
+  config: /var/lib/lxc
+  cgroup: /cgroup
+  storage: /var/containers
+executables:
+  lxc-start: /usr/bin/lxc-start
+  lxc-stop: /usr/bin/lxc-stop
+  lxc-info: /usr/bin/lxc-info
+  lxc-console: /usr/bin/lxc-console
+  ip: /sbin/ip
+network:
+  range: 192.168.2.0/24
+  gateway: 192.168.2.1
+  resolv.conf: |
+               search example.com
+               nameserver 8.8.8.8
+  veth_template: veth_
+  hostname_template: %hostname%.example.com
+general:
+  threads: 8
+  stop_timeout: 120
+  start_timeout: 60

@@ -1,10 +1,22 @@
 #!/usr/bin/php
 <?php
 
-require 'lib/Console.class.php';
-require 'lib/Container.class.php';
-require 'lib/Controller.class.php';
-require 'lib/vendor/Console_Color.class.php';
+require __DIR__.'/src/vendor/Symfony/Foundation/UniversalClassLoader.php';
 
-$console = new \ContainerKit\Console();
-$console->process($argv);
+$loader = new Symfony\Foundation\UniversalClassLoader();
+$loader->registerNamespaces(array(
+  'ContainerKit' =>  __DIR__.'/src',
+  'Symfony' => __DIR__.'/src/vendor',
+));
+
+$loader->registerPrefixes(array(
+  'Console_' => __DIR__.'/src/vendor',
+));
+
+$loader->register();
+
+$controller = new ContainerKit\Core\Controller();
+$controller->loadConfig(__DIR__.'/config.yml');
+
+$application = new ContainerKit\Console\Application($controller);
+$application->run();
