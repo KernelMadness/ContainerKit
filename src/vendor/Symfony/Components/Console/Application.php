@@ -13,7 +13,7 @@ use Symfony\Components\Console\Output\Output;
 use Symfony\Components\Console\Output\ConsoleOutput;
 use Symfony\Components\Console\Command\Command;
 use Symfony\Components\Console\Command\HelpCommand;
-use Symfony\Components\Console\Command\ListCommand;
+use Symfony\Components\Console\Command\CmdListCommand;
 use Symfony\Components\Console\Helper\HelperSet;
 use Symfony\Components\Console\Helper\FormatterHelper;
 use Symfony\Components\Console\Helper\DialogHelper;
@@ -78,7 +78,7 @@ class Application
         ));
 
         $this->addCommand(new HelpCommand());
-        $this->addCommand(new ListCommand());
+        $this->addCommand(new CmdListCommand());
 
         $this->definition = new InputDefinition(array(
             new InputArgument('command', InputArgument::REQUIRED, 'The command to execute'),
@@ -196,8 +196,8 @@ class Application
 
         if (!$name)
         {
-            $name = 'list';
-            $input = new ArrayInput(array('command' => 'list'));
+            $name = 'cmd-list';
+            $input = new ArrayInput(array('command' => 'cmd-list'));
         }
 
         // the command name MUST be the first element of the input

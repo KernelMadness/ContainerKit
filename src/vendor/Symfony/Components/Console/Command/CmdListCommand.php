@@ -19,13 +19,13 @@ use Symfony\Components\Console\Command\Command;
  */
 
 /**
- * ListCommand displays the list of all available commands for the application.
+ * CmdListCommand displays the list of all available commands for the application.
  *
  * @package    Symfony
  * @subpackage Components_Console
  * @author     Fabien Potencier <fabien.potencier@symfony-project.com>
  */
-class ListCommand extends Command
+class CmdListCommand extends Command
 {
     /**
      * @see Command
@@ -37,22 +37,8 @@ class ListCommand extends Command
                 new InputArgument('namespace', InputArgument::OPTIONAL, 'The namespace name'),
                 new InputOption('xml', null, InputOption::PARAMETER_NONE, 'To output help as XML'),
             ))
-            ->setName('list')
-            ->setDescription('Lists commands')
-            ->setHelp(<<<EOF
-The <info>list</info> command lists all commands:
-
-  <info>./lxc list</info>
-
-You can also display the commands for a specific namespace:
-
-  <info>./lxc list test</info>
-
-You can also output the information as XML by using the <comment>--xml</comment> option:
-
-  <info>./lxc list --xml</info>
-EOF
-            );
+            ->setName('cmd-list')
+            ->setDescription('Lists commands');
     }
 
     /**

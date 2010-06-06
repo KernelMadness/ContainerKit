@@ -43,17 +43,7 @@ class HelpCommand extends Command
             ))
             ->setName('help')
             ->setAliases(array('?'))
-            ->setDescription('Displays help for a command')
-            ->setHelp(<<<EOF
-The <info>help</info> command displays help for a given command:
-
-  <info>./lxc help list</info>
-
-You can also output the help as XML by using the <comment>--xml</comment> option:
-
-  <info>./lxc help --xml list</info>
-EOF
-            );
+            ->setDescription('Displays help for a command');
     }
 
     public function setCommand(Command $command)
