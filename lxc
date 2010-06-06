@@ -1,0 +1,10 @@
+#!/usr/bin/php
+<?php
+
+require 'lib/Console.class.php';
+require 'lib/Container.class.php';
+require 'lib/Controller.class.php';
+require 'lib/vendor/Console_Color.class.php';
+
+$console = new \ContainerKit\Console();
+$console->process($argv);
