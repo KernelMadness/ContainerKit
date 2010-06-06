@@ -203,6 +203,7 @@ class Container {
   public function start() {
     if (file_exists($this->getLogPath()))
       unlink($this->getLogPath());
+    touch($this->controller->getRoot('storage') . "/{$this->getName()}/fastboot");
     $this->controller->launchExecutable('lxc-start', "-d -o {$this->getLogPath()} -lDEBUG -n {$this->getName()}");
   }
 

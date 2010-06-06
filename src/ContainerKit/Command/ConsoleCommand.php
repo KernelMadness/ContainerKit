@@ -39,7 +39,7 @@ class ConsoleCommand extends Command {
       $output->writeln("<error>Container $name does not exists</error>");
     } else {
       $ex = $this->application->getController()->getExecutable('lxc-console');
-      pcntl_exec($ex, array("-n$name"));
+      \ContainerKit\Console\Launcher::launch("$ex -n $name");
     }
   }
 

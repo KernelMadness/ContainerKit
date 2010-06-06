@@ -165,7 +165,7 @@ class Controller {
       return;
     }
     $threads = array();
-    $threads_count = $this->config['general']['threads'];
+    $threads_count = $this->config['general']['stop_threads'];
     while (!empty($containers) || !empty ($threads)) {
       if ((count($threads) < $threads_count) && !empty($containers)) {
         $container = array_shift($containers);
@@ -212,7 +212,7 @@ class Controller {
         unset($containers[$key]);
     }
     $threads = array();
-    $threads_count = $this->config['general']['threads'];
+    $threads_count = $this->config['general']['start_threads'];
     while (!empty($containers) || !empty ($threads)) {
       if ((count($threads) < $threads_count) && !empty($containers)) {
         $container = array_shift($containers);
@@ -297,7 +297,7 @@ class Controller {
     mkdir($this->getRoot('config') . "/{$params['name']}");
     file_put_contents(
       $this->getRoot('config') . "/{$params['name']}/config",
-      str_replace('%name%', $params['name'], file_get_contents('/etc/containerkit/container.config.template')));
+      str_replace('%name%', $params['name'], file_get_contents(\CONFIG_DIR . '/container.config.template')));
     if (isset ($params['tag'])) {
       $container = $this->getContainer($params['name']);
       $container->setTag($params['tag']);

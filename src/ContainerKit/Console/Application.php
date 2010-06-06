@@ -29,7 +29,7 @@ class Application extends BaseApplication {
   public function __construct(Controller $controller) {
     $this->controller = $controller;
 
-    parent::__construct('ContainerKit', '1.0-alpha1');
+    parent::__construct('ContainerKit', \CONTAINERKIT_VERSION);
 
     $this->definition->addOption(new InputOption('--shell', '-s', InputOption::PARAMETER_NONE, 'Launch the shell.'));
 
