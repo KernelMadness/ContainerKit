@@ -23,6 +23,7 @@ class StopCommand extends Command {
     $this
       ->setDefinition(array(
       new InputArgument('selector', InputArgument::REQUIRED, 'Containers selector'),
+      new InputOption('hard', null, InputOption::PARAMETER_NONE, 'Perform hard stop'),
       ))
       ->setName('stop')
       ->setDescription('Stop containers')
@@ -34,7 +35,8 @@ class StopCommand extends Command {
    */
   protected function execute(InputInterface $input, OutputInterface $output) {
     $selector = $input->getArgument('selector');
-    $this->application->getController()->stop($selector, function($message) {
+    $hard = $input->getOption('hard');
+    $this->application->getController()->stop($selector, $hard, function($message) {
         echo \Console_Color::convert(" %g>>%n ") . $message ."\n";
       }
     );

@@ -16,7 +16,7 @@ $loader->registerPrefixes(array(
 $loader->register();
 
 $controller = new ContainerKit\Core\Controller();
-$controller->loadConfig(__DIR__.'/config.yml');
+$controller->loadConfig(__DIR__.'/etc/config.yml');
 
 $application = new ContainerKit\Console\Application($controller);
 $application->run();

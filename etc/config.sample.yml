@@ -8,15 +8,17 @@ executables:
   lxc-info: /usr/bin/lxc-info
   lxc-console: /usr/bin/lxc-console
   ip: /sbin/ip
+  cp: /bin/cp
 network:
-  range: 192.168.2.0/24
+  range: 192.168.2.2-192.168.2.254
   gateway: 192.168.2.1
+  netmask: 255.255.255.0
   resolv.conf: |
                search example.com
                nameserver 8.8.8.8
-  veth_template: veth_
-  hostname_template: %hostname%.example.com
+  hostname: %name%.example.com
 general:
   threads: 8
   stop_timeout: 120
   start_timeout: 60
+  default_template: debian-base

@@ -38,9 +38,9 @@ class TagSetCommand extends Command {
     $selector = $input->getArgument('selector');
     $tag = $input->getArgument('tag');
 
-    $containers = $this->controller->selectContainers($selector);
+    $containers = $this->application->getController()->selectContainers($selector);
     array_walk($containers, function(&$container, $key, $tag) {
-        $container->removeTag($tag);
+        $container->setTag($tag);
       }, $tag);
 
   }

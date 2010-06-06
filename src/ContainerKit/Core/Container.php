@@ -70,13 +70,18 @@ class Container {
     return $memstat;
   }
 
-  public function getNetstat() {
-    $ret = array();
+  public function getIp() {
     if (file_exists($v = $this->controller->getRoot('storage') . "/$this->name/etc/network/interfaces")) {
       preg_match("/^address\s*(.*)$/mi", file_get_contents($v), $matches);
       if(isset($matches[1]))
-        $ret['ip'] = $matches[1];
+        return $matches[1];
     }
+    return false;
+  }
+
+  public function getNetstat() {
+    $ret = array();
+    $ret['ip'] = $this->getIp();
 
     if ($dev = $this->getVeth()) {
       $ret['upload'] = trim(file_get_contents("/sys/class/net/$dev/statistics/rx_bytes"));
@@ -185,7 +190,7 @@ class Container {
     if ($hard)
       $this->controller->launchExecutable('lxc-stop', '-n ' . $this->getName());
     else
-      posix_kill($this->getInitPid(), \SIGWINCH);
+      posix_kill($this->getInitPid(), \SIGINT);
   }
 
   /**

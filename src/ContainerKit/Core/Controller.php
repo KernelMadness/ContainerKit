@@ -88,12 +88,6 @@ class Controller {
   public function launchExecutable($name, $params) {
     $ex = $this->getExecutable($name);
     return `$ex $params 2>&1`;
-//    $handle = popen("$ex $params", 'r');
-//    $ret = '';
-//    while ($data = fread($handle, 4096))
-//      $ret .= $data;
-//    pclose($handle);
-//    return $ret;
   }
 
   /**
@@ -140,13 +134,19 @@ class Controller {
     return $ret;
   }
 
-  public function stop($selector, $console_callback = null) {
+  public function stop($selector, $hard = false, $console_callback = null) {
     if ($console_callback == null)
       $console_callback = function() {};
     $containers = $this->selectContainers($selector);
     foreach ($containers as $key => $container) {
       if (!$container->isRunning())
         unset($containers[$key]);
+    }
+    if ($hard) {
+      foreach ($containers as $container) {
+        $container->stop(true);
+      }
+      return;
     }
     $threads = array();
     $threads_count = $this->config['general']['threads'];
@@ -225,6 +225,89 @@ class Controller {
   public function restart($selector, $console_callback = null) {
     $this->stop($selector, $console_callback);
     $this->start($selector, $console_callback);
+  }
+
+  public function create($params, $console_callback = null) {
+    if ($console_callback == null)
+      $console_callback = function() {};
+    assert_options(\ASSERT_CALLBACK, function() {
+      throw new \Exception('Not enough arguments');
+    }
+    );
+    assert_options(\ASSERT_WARNING, 0);
+    assert(isset($params['name']));
+    assert(isset($params['ip']));
+    assert(isset($params['template']));
+
+    $root = $this->getRoot('storage');
+    $croot = $root . '/' . $params['name'];
+
+    $console_callback("Creating root filesystem");
+    $this->launchExecutable('cp', "-a $root/.templates/{$params['template']} $root/{$params['name']}");
+    $console_callback("Writing configuration files");
+    file_put_contents(
+      $croot . '/etc/resolv.conf',
+      $this->config['network']['resolv.conf']);
+    $search = array('%address%', '%netmask%', '%gateway%');
+    $replace = array($params['ip'], $this->config['network']['netmask'], $this->config['network']['gateway']);
+    file_put_contents(
+      $croot . '/etc/network/interfaces',
+      str_replace($search, $replace, file_get_contents($croot . '/etc/network/interfaces')));
+    file_put_contents(
+      $croot . '/etc/hostname',
+      str_replace('%name%', $params['name'], $this->config['network']['hostname'])."\n");
+    $console_callback("Writing host-side configuration");
+    mkdir($this->getRoot('config') . "/{$params['name']}");
+    file_put_contents(
+      $this->getRoot('config') . "/{$params['name']}/config",
+      str_replace('%name%', $params['name'], file_get_contents('/etc/containerkit/container.config.template')));
+    if (isset ($params['tag'])) {
+      $container = $this->getContainer($params['name']);
+      $container->setTag($params['tag']);
+    }
+  }
+
+  /**
+   * Find first unused IP in range
+   *
+   * @return string|boolean
+   */
+  public function findFreeIp() {
+    $ips = array();
+    foreach ($this->getContainers() as $container) {
+      if ($ip = $container->getIp())
+        $ips[] = $ip;
+    }
+    list($start_ip, $end_ip) = explode('-', $this->config['network']['range']);
+    $start_ip = ip2long($start_ip);
+    $end_ip = ip2long($end_ip);
+    for ($i = $start_ip; $i <= $end_ip; $i++) {
+      if (!in_array(long2ip($i), $ips))
+        return long2ip($i);
+    }
+    return false;
+  }
+
+  /**
+   * Get available container templates
+   *
+   * @return array[string]
+   */
+  public function getTemplates() {
+    $templates = array();
+    $di = new \DirectoryIterator($this->getRoot('storage') . '/.templates');
+    foreach ($di as $object) {
+      if ($object->isDir() && !$object->isDot()) {
+        $filename = $object->getFilename();
+        $templates[] = $filename;
+      }
+    }
+    sort($templates);
+    return $templates;
+  }
+
+  public function getConfig($section, $key) {
+    return $this->config[$section][$key];
   }
 
 }

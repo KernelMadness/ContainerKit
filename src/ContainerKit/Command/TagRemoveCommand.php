@@ -38,9 +38,9 @@ class TagRemoveCommand extends Command {
     $selector = $input->getArgument('selector');
     $tag = $input->getArgument('tag');
 
-    $containers = $this->controller->selectContainers($selector);
+    $containers = $this->application->getController()->selectContainers($selector);
     array_walk($containers, function(&$container, $key, $tag) {
-        $container->setTag($tag);
+        $container->removeTag($tag);
       }, $tag);
 
   }

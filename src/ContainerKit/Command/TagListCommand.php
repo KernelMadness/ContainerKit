@@ -23,7 +23,7 @@ class TagListCommand extends Command {
   protected function configure() {
     $this
       ->setDefinition(array(
-      new InputArgument('selector', InputArgument::REQUIRED, 'Container selector'),
+      new InputArgument('selector', InputArgument::OPTIONAL, 'Container selector'),
       ))
       ->setName('tag-list')
       ->setDescription('Show container tags by selector')
@@ -35,10 +35,10 @@ class TagListCommand extends Command {
    */
   protected function execute(InputInterface $input, OutputInterface $output) {
     $selector = $input->getArgument('selector');
-    if ($selector == ':all')
+    if (!$selector)
       $containers = $this->application->getController()->getContainers();
     else
-      $containers = $this->application->getController()->selectContainers($this->params[3]);
+      $containers = $this->application->getController()->selectContainers($selector);
     $l = Formatter::calculateNamelength($containers) + 1;
     $FORMAT = "%{$l}s %5s\n";
     printf($FORMAT, 'Name', 'Tags');
