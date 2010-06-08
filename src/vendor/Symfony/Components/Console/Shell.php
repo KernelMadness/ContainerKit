@@ -145,7 +145,7 @@ class Shell
 Welcome to the <info>{$this->application->getName()}</info> shell (<comment>{$this->application->getVersion()}</comment>).
 
 At the prompt, type <comment>help</comment> for some help,
-or <comment>list</comment> to get a list available commands.
+or <comment>cmd-list</comment> to get a list available commands.
 
 To exit the shell, type <comment>^D</comment>.
 

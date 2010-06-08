@@ -83,7 +83,7 @@ class Controller {
    * @return string
    */
   public function getExecutable($name) {
-    return isset($this->config['executables'][$name]) ? $this->config['executables'][$name] : null;
+    return isset($this->config['executables'][$name]) ? $this->config['executables'][$name] : $name;
   }
 
   /**
@@ -281,6 +281,11 @@ class Controller {
     assert(isset($params['ip']));
     assert(isset($params['template']));
 
+    if (false !== $this->getContainer($params['name'])) {
+      $console_callback('Container with same name already exists');
+      return false;
+    }
+
     $root = $this->getRoot('storage');
     $croot = $root . '/' . $params['name'];
 
@@ -328,6 +333,12 @@ class Controller {
     $container->addAllowedIp($params['ip']);
   }
 
+  /**
+   * Destroy containers
+   *
+   * @param string $selector Container selector
+   * @param \Closure $console_callback Callback for console output
+   */
   public function destroy($selector, $console_callback = null) {
     $this->stop($selector, true, $console_callback);
     $containers = $this->selectContainers($selector);
@@ -337,6 +348,44 @@ class Controller {
       $console_callback("Purging '{$container->getName()}' configuration");
       $this->launchExecutable('rm', '-rf ' . $this->getRoot('config') . "/{$container->getName()}");
     }
+    clearstatcache();
+  }
+
+  /**
+   * Create tar archive of container
+   *
+   * @param string $selector Containers selector
+   * @param \Closure $console_callback Callback for console output
+   */
+  public function archive($selector, $console_callback = null) {
+    $this->stop($selector, false, $console_callback);
+    $containers = $this->selectContainers($selector);
+    foreach ($containers as $container) {
+      $console_callback('Archiving ' . $container->getName());
+      $this->launchExecutable('tar', "-cf {$container->getName()}.tar {$container->getStorageDir()} {$container->getConfigDir()}");
+    }
+  }
+
+  /**
+   * Restore container from tar achive
+   *
+   * @param string $name Archive file name
+   * @param \Closure $console_callback Callback for console output
+   * @return boolean True on successful restore
+   */
+  public function restore($name, $console_callback = null) {
+    $name = realpath($name);
+    if (!file_exists($name)) {
+      $console_callback('File does not exists');
+      return false;
+    }
+    $v = explode('.', basename($name));
+    if (false !== $this->getContainer($v[0])) {
+      $console_callback('Container with same name already exists');
+      return false;
+    }
+    $console_callback("Restoring {$v[0]}");
+    $this->launchExecutable('tar', "-xf $name -C /");
   }
 
   /**

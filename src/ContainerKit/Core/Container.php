@@ -372,6 +372,24 @@ class Container {
     return $this->controller->getRoot('config') . '/' . $this->name . '/config';
   }
 
+  /**
+   * Get path to storage directory
+   *
+   * @return string
+   */
+  public function getStorageDir() {
+    return $this->controller->getRoot('storage') . '/' . $this->name;
+  }
+
+  /**
+   * Get path to config directory
+   *
+   * @return string
+   */
+  public function getConfigDir() {
+    return $this->controller->getRoot('config') . '/' . $this->name;
+  }
+
   public function enableEbtables() {
     $ips = $this->getAllowedIps();
     $veth = $this->getVeth();
